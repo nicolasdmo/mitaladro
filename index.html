@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Necesidades del público en Latinoamérica · Análisis para diseñar tu MVP</title>
+  <meta name="description" content="Dashboard de necesidades de entretenimiento y resolución de problemas del público en Latinoamérica, para descubrir cómo diseñar un producto mínimo viable." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <div class="brand">📊 Radar LatAm <small>· necesidades → MVP</small></div>
+    <nav>
+      <a href="#entretenimiento">Entretenimiento</a>
+      <a href="#problemas">Problemas</a>
+      <a href="#oportunidades">Oportunidades</a>
+      <a href="#playbook">Playbook MVP</a>
+      <a href="#fuentes">Fuentes</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- HERO -->
+  <section class="hero">
+    <span class="eyebrow">Región: Latinoamérica · Análisis exploratorio</span>
+    <h1>¿Qué necesita el público de Latinoamérica para entretenerse y resolver sus problemas?</h1>
+    <p class="lead">Un tablero visual para detectar demanda real y decidir <strong>cómo diseñar un producto mínimo viable</strong>. Datos de consumo, brechas sin atender, un mapa de oportunidades y un playbook accionable.</p>
+    <div class="metaline">
+      <span class="tag">Actualizado: Julio 2026</span>
+      &nbsp; Compilado de reportes públicos (Google Year in Search, eMarketer, AMI, IDB y prensa especializada).
+      <b>No es una API de Google Trends en vivo</b> — el dataset es editable para reemplazarlo por datos propios.
+    </div>
+  </section>
+
+  <!-- KPIs -->
+  <section class="block" style="padding-top:6px">
+    <div class="grid g6" id="kpis"></div>
+  </section>
+
+  <!-- ENTRETENIMIENTO -->
+  <section class="block" id="entretenimiento">
+    <div class="sec-head">
+      <div class="kicker">Necesidad 1 · Entretenimiento</div>
+      <h2>Cómo y cuánto consume entretenimiento la región</h2>
+      <p>Latinoamérica es la segunda región de más rápido crecimiento en streaming del mundo y pasa más tiempo online que cualquier otra. El consumo es <strong>móvil, social y de formato corto</strong>.</p>
+    </div>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>Suscriptores de streaming</h3>
+        <p class="csub">Millones · 2023 → 2027 (proyección)</p>
+        <div class="chart" id="chart-streaming"></div>
+        <p class="note" id="note-streaming"></p>
+      </div>
+      <div class="card">
+        <h3>Tiempo de consumo diario: LatAm vs Global</h3>
+        <p class="csub">Horas por día</p>
+        <div class="chart" id="chart-tiempo"></div>
+        <p class="note" id="note-tiempo"></p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <h3>Penetración de videojuegos por país</h3>
+        <p class="csub">% de población que juega</p>
+        <div class="chart" id="chart-gaming"></div>
+        <p class="note" id="note-gaming"></p>
+      </div>
+      <div class="card">
+        <h3>Dispositivo por actividad</h3>
+        <p class="csub">% de usuarios</p>
+        <div id="chart-dispositivos"></div>
+        <p class="note" id="note-dispositivos"></p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>Señales clave de entretenimiento</h3>
+      <p class="csub">Qué buscan y cómo se comportan</p>
+      <ul id="bullets-entretenimiento"></ul>
+    </div>
+  </section>
+
+  <!-- PROBLEMAS -->
+  <section class="block" id="problemas">
+    <div class="sec-head">
+      <div class="kicker">Necesidad 2 · Resolución de problemas</div>
+      <h2>Las brechas cotidianas que la gente quiere resolver</h2>
+      <p>Las mayores oportunidades están donde hay mayor déficit: <strong>plata, acceso, educación y salud</strong>. El capital y la adopción ya se están moviendo hacia ahí.</p>
+    </div>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>Sectores con mayor brecha</h3>
+        <p class="csub">Prioridad de oportunidad (estimación del análisis)</p>
+        <div id="chart-brechas"></div>
+        <p class="note" id="note-brechas"></p>
+      </div>
+      <div class="card">
+        <h3>El giro hacia el pago digital</h3>
+        <p class="csub">% de participación por canal</p>
+        <div class="chart" id="chart-pagos"></div>
+        <p class="note" id="note-pagos"></p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>Señales clave de problemas a resolver</h3>
+      <p class="csub">Dónde está la demanda insatisfecha</p>
+      <ul id="bullets-problemas"></ul>
+    </div>
+  </section>
+
+  <!-- OPORTUNIDADES -->
+  <section class="block" id="oportunidades">
+    <div class="sec-head">
+      <div class="kicker">Síntesis · Dónde jugar</div>
+      <h2>Mapa de oportunidades para tu MVP</h2>
+      <p>Cruzamos demanda, facilidad de entrada y potencial de monetización. Buscá la <strong>zona ideal</strong> (arriba-derecha) y contrastá con la tabla de puntajes.</p>
+    </div>
+
+    <div class="grid g2">
+      <div class="card">
+        <h3>Demanda vs. facilidad de entrada</h3>
+        <p class="csub">Tamaño de burbuja = potencial de monetización · estimación del análisis</p>
+        <div class="chart" id="chart-oportunidades"></div>
+        <p class="note" id="note-oportunidades"></p>
+      </div>
+      <div class="card">
+        <h3>Cómo leer el mapa</h3>
+        <p class="csub">Guía rápida de decisión</p>
+        <ul class="bullets">
+          <li><strong>Arriba-derecha:</strong> alta demanda + baja barrera → mejor punto de partida para un MVP.</li>
+          <li><strong>Abajo-derecha:</strong> demanda enorme pero difícil (ej. fintech regulada) → gran premio, requiere más recursos.</li>
+          <li><strong>Arriba-izquierda:</strong> fácil de entrar pero mercado chico → sirve para aprender rápido.</li>
+          <li><strong>Burbuja grande:</strong> mejor monetización — prioriza modelos con ingreso claro.</li>
+          <li>Elegí <strong>una</strong> oportunidad y <strong>un</strong> país para validar; no ataques toda la región de una.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="sec-head" style="margin-bottom:12px">
+        <h2 style="font-size:19px">Ranking de oportunidades por puntaje</h2>
+        <p>Puntaje = demanda 35% · monetización 30% · (menor competencia) 20% · (menor dificultad) 15%.</p>
+      </div>
+      <div id="scoring-table"></div>
+    </div>
+  </section>
+
+  <!-- PLAYBOOK -->
+  <section class="block" id="playbook">
+    <div class="sec-head">
+      <div class="kicker">Accionable · Cómo construirlo</div>
+      <h2>Playbook: de la necesidad al MVP</h2>
+      <p>Siete principios de diseño derivados de los datos anteriores, para llevar una oportunidad a un producto mínimo viable en la región.</p>
+    </div>
+    <div class="steps" id="playbook-steps"></div>
+  </section>
+
+  <!-- FUENTES -->
+  <section class="block" id="fuentes">
+    <div class="sec-head">
+      <div class="kicker">Metodología</div>
+      <h2>Fuentes y notas</h2>
+    </div>
+    <div class="callout" style="margin-bottom:16px">
+      <b>Sobre los datos:</b> las cifras de consumo, mercado e inversión provienen de reportes públicos citados abajo (Google Year in Search, eMarketer, AMI, IDB, market research y prensa). Los bloques marcados como <b>“estimación del análisis”</b> (prioridad de sectores, mapa y puntajes de oportunidad) son síntesis propia para priorizar, no datos crudos. <b>No hay conexión a una API de Google Trends en tiempo real</b> (Google no ofrece una API pública estable). Todo el dataset vive en <code>assets/data.js</code> y es editable.
+    </div>
+    <ul class="sources" id="sources"></ul>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    Radar LatAm · Análisis de necesidades de entretenimiento y resolución de problemas para el diseño de un MVP.
+    Dataset editable en <code>assets/data.js</code>.
+  </div>
+</footer>
+
+<script>
+  /* tema: respeta preferencia del sistema y permite override manual (persistido) */
+  (function () {
+    const root = document.documentElement;
+    const saved = localStorage.getItem("theme");
+    if (saved) root.setAttribute("data-theme", saved);
+    const btn = document.getElementById("themeBtn");
+    btn.addEventListener("click", () => {
+      const cur = root.getAttribute("data-theme") ||
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      const next = cur === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      localStorage.setItem("theme", next);
+      if (window.__renderAll) window.__renderAll();
+    });
+  })();
+</script>
+<script src="assets/data.js"></script>
+<script src="assets/charts.js"></script>
+<script>
+  /* llenar las notas desde el dataset */
+  window.addEventListener("DOMContentLoaded", function () {
+    const D = window.DATA, set = (id, t) => { const e = document.getElementById(id); if (e) e.textContent = t; };
+    set("note-streaming", D.streamingCrecimiento.nota);
+    set("note-tiempo", D.tiempoConsumo.nota);
+    set("note-gaming", D.gamingPais.nota);
+    set("note-dispositivos", D.dispositivos.nota);
+    set("note-brechas", D.brechasSectores.nota);
+    set("note-pagos", D.pagos.nota);
+    set("note-oportunidades", D.oportunidades.nota);
+  });
+</script>
+</body>
+</html>

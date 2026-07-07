@@ -182,42 +182,106 @@
     yl.setAttribute("transform", `rotate(-90 16 ${mT + ih / 2})`); svg.appendChild(yl);
     cfg.items.forEach((it, i) => {
       const x = X(it.demanda), y = Y(it.facilidad), r = 9 + it.monetizacion / 100 * 22, col = cols[i % cols.length];
-      const c = s("circle", { cx: x, cy: y, r, fill: col, "fill-opacity": .78, stroke: cssv("--surface"), "stroke-width": 2 });
-      bindTip(c, `<b>${esc(it.nombre)}</b><br>Demanda: ${it.demanda} · Facilidad: ${it.facilidad}<br>Monetización: ${it.monetizacion}`);
+      const isTop = it.nombre === topPickName;
+      if (isTop) svg.appendChild(s("circle", { cx: x, cy: y, r: r + 6, fill: "none", stroke: cssv("--s2"), "stroke-width": 2.5 }));
+      const c = s("circle", { cx: x, cy: y, r, fill: col, "fill-opacity": isTop ? .95 : .7, stroke: cssv("--surface"), "stroke-width": 2 });
+      bindTip(c, `<b>${esc(it.nombre)}</b><br>Demanda: ${it.demanda} · Facilidad: ${it.facilidad}<br>Monetización: ${it.monetizacion}${isTop ? "<br>★ tu mejor opción" : ""}`);
       svg.appendChild(c);
-      svg.appendChild(txt(x, y - r - 5, it.nombre, "", { "text-anchor": "middle", "font-size": 10.5, "font-weight": 600, fill: cssv("--ink-2") }));
+      svg.appendChild(txt(x, y - r - (isTop ? 11 : 5), (isTop ? "★ " : "") + it.nombre, "", { "text-anchor": "middle", "font-size": isTop ? 11.5 : 10.5, "font-weight": isTop ? 700 : 600, fill: isTop ? cssv("--s2") : cssv("--ink-2") }));
     });
     box.appendChild(svg);
   }
 
-  /* ---------- scoring table ---------- */
+  /* ---------- buscador interactivo + scoring ---------- */
+  const finder = { foco: "ambos", wDem: 50, wFac: 50, wMon: 50, sortKey: "score", sortDir: -1 };
+  let topPickName = null;
+
   function scoreColor(v) {
     if (v >= 70) return cssv("--good");
     if (v >= 55) return cssv("--s3");
     return cssv("--serious");
   }
-  function scoringTable(id) {
+  function computeScores() {
+    let { wDem, wFac, wMon } = finder;
+    let tot = wDem + wFac + wMon; if (tot <= 0) { wDem = wFac = wMon = 1; tot = 3; }
+    return D.scoring
+      .filter(r => finder.foco === "ambos" || r.categoria === finder.foco || r.categoria === "ambos")
+      .map(r => {
+        const facilidad = Math.round(((100 - r.competencia) + (100 - r.dificultad)) / 2);
+        const score = Math.round((wDem * r.demanda + wFac * facilidad + wMon * r.monetizacion) / tot);
+        return Object.assign({ facilidad, score }, r);
+      });
+  }
+  function renderScoring(id) {
     const box = $(id);
-    const rows = D.scoring.map(r => {
-      const score = Math.round(r.demanda * .35 + r.monetizacion * .30 + (100 - r.competencia) * .20 + (100 - r.dificultad) * .15);
-      return Object.assign({ score }, r);
-    }).sort((a, b) => b.score - a.score);
+    const rows = computeScores();
+    const best = rows.reduce((a, b) => (b.score > (a ? a.score : -1) ? b : a), null);
+    topPickName = best ? best.nombre : null;
+    const k = finder.sortKey, dir = finder.sortDir;
+    rows.sort((a, b) => (k === "nombre" ? a.nombre.localeCompare(b.nombre) * -1 : a[k] - b[k]) * dir);
     const cell = (v, colorVar) => {
-      const c = cssv(colorVar || "--s1");
+      const c = cssv(colorVar);
       return `<td class="num databar"><span class="bar" style="width:${v}%;background:${c}"></span><span>${v}</span></td>`;
     };
+    const arrow = (key) => k === key ? `<span class="arr">${dir < 0 ? "▼" : "▲"}</span>` : "";
+    const th = (key, label, cls) => `<th class="sortable ${cls || ""}" data-k="${key}">${label} ${arrow(key)}</th>`;
     let html = `<div class="tablewrap"><table class="data"><thead><tr>
-      <th>Oportunidad</th><th class="num">Demanda</th><th class="num">Monetización</th>
-      <th class="num">Competencia</th><th class="num">Dificultad</th><th class="num">Puntaje</th></tr></thead><tbody>`;
+      ${th("nombre", "Oportunidad", "")}${th("demanda", "Demanda", "num")}
+      ${th("monetizacion", "Monetización", "num")}${th("facilidad", "Facilidad", "num")}
+      ${th("score", "Tu puntaje", "num")}</tr></thead><tbody>`;
     rows.forEach(r => {
-      const sc = scoreColor(r.score);
-      html += `<tr><td>${esc(r.nombre)}</td>
-        ${cell(r.demanda, "--s1")}${cell(r.monetizacion, "--s2")}
-        ${cell(r.competencia, "--s6")}${cell(r.dificultad, "--s8")}
+      const sc = scoreColor(r.score), top = r.nombre === topPickName;
+      html += `<tr class="${top ? "top-pick" : ""}"><td>${esc(r.nombre)}</td>
+        ${cell(r.demanda, "--s1")}${cell(r.monetizacion, "--s2")}${cell(r.facilidad, "--s4")}
         <td class="num"><span class="scorepill" style="color:${sc};background:color-mix(in srgb, ${sc} 16%, transparent)">${r.score}</span></td></tr>`;
     });
     html += `</tbody></table></div>`;
     box.innerHTML = html;
+    box.querySelectorAll("th.sortable").forEach(th => th.addEventListener("click", () => {
+      const key = th.dataset.k;
+      if (finder.sortKey === key) finder.sortDir *= -1;
+      else { finder.sortKey = key; finder.sortDir = key === "nombre" ? 1 : -1; }
+      renderScoring(id);
+    }));
+  }
+  function renderRec() {
+    const box = $("rec-card"); if (!box) return;
+    const rows = computeScores().sort((a, b) => b.score - a.score);
+    if (!rows.length) { box.innerHTML = `<div class="rk">Sin resultados</div><h4>Ajustá el foco</h4>`; return; }
+    const r = rows[0];
+    const sc = scoreColor(r.score);
+    box.innerHTML =
+      `<div class="rk">★ Tu mejor oportunidad</div>
+       <h4>${esc(r.nombre)}</h4>
+       <div class="rscore">Puntaje para vos: <b style="color:${sc}">${r.score}/100</b> ·
+         demanda ${r.demanda} · facilidad ${r.facilidad} · monetización ${r.monetizacion}</div>
+       <p class="rmvp"><b>Por dónde arrancar:</b> ${esc(r.mvp)}</p>`;
+  }
+  function recompute() { renderScoring("scoring-table"); renderRec(); bubble("chart-oportunidades", D.oportunidades); }
+
+  let wired = false;
+  function wireFinder() {
+    if (wired) return; wired = true;
+    const seg = $("seg-foco");
+    if (seg) seg.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+      seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", "false"));
+      b.setAttribute("aria-pressed", "true");
+      finder.foco = b.dataset.val; recompute();
+    }));
+    const bind = (id, prop, out) => {
+      const el = $(id), o = $(out); if (!el) return;
+      el.addEventListener("input", () => { finder[prop] = +el.value; if (o) o.textContent = el.value; recompute(); });
+    };
+    bind("w-dem", "wDem", "v-dem"); bind("w-fac", "wFac", "v-fac"); bind("w-mon", "wMon", "v-mon");
+    const reset = $("finder-reset");
+    if (reset) reset.addEventListener("click", () => {
+      finder.foco = "ambos"; finder.wDem = finder.wFac = finder.wMon = 50;
+      finder.sortKey = "score"; finder.sortDir = -1;
+      ["w-dem", "w-fac", "w-mon"].forEach(i => { const e = $(i); if (e) e.value = 50; });
+      ["v-dem", "v-fac", "v-mon"].forEach(i => { const e = $(i); if (e) e.textContent = "50"; });
+      if (seg) seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x.dataset.val === "ambos" ? "true" : "false"));
+      recompute();
+    });
   }
 
   /* ---------- KPIs, bullets, playbook, sources ---------- */
@@ -262,8 +326,8 @@
       series: D.pagos.series, unit: D.pagos.unidad, colorIdx: [0, 1], max: 60,
       groups: D.pagos.filas.map(f => ({ label: f.label, values: [f.ecommerce, f.tienda] })),
     });
-    bubble("chart-oportunidades", D.oportunidades);
-    scoringTable("scoring-table");
+    wireFinder();
+    recompute();
     bullets("bullets-entretenimiento", D.entretenimientoInsights);
     bullets("bullets-problemas", D.problemasInsights, "aqua");
     playbook();

@@ -142,17 +142,18 @@ window.DATA = {
   },
 
   /* --------- Tabla de scoring de oportunidades --------- */
-  /*  ESTIMACIÓN DEL ANÁLISIS. puntaje = promedio ponderado (demanda 35%,
-      monetización 30%, (100-competencia) 20%, (100-dificultad) 15%).          */
+  /*  ESTIMACIÓN DEL ANÁLISIS. El puntaje se recalcula en vivo según lo que el
+      usuario prioriza en el buscador interactivo. categoria: entretenimiento |
+      problema | ambos.  mvp: por dónde arrancar.                               */
   scoring: [
-    { nombre: "Video corto / creadores", demanda: 90, monetizacion: 55, competencia: 70, dificultad: 30 },
-    { nombre: "Fintech inclusión",       demanda: 95, monetizacion: 90, competencia: 75, dificultad: 80 },
-    { nombre: "Herramientas IA",         demanda: 80, monetizacion: 64, competencia: 60, dificultad: 55 },
-    { nombre: "Wallets / BNPL",          demanda: 88, monetizacion: 82, competencia: 78, dificultad: 65 },
-    { nombre: "Gaming mobile",           demanda: 82, monetizacion: 70, competencia: 72, dificultad: 60 },
-    { nombre: "EdTech práctica",         demanda: 74, monetizacion: 60, competencia: 55, dificultad: 45 },
-    { nombre: "HealthTech",              demanda: 70, monetizacion: 68, competencia: 50, dificultad: 70 },
-    { nombre: "Delivery / comercio",     demanda: 61, monetizacion: 58, competencia: 85, dificultad: 55 },
+    { nombre: "Video corto / creadores", demanda: 90, monetizacion: 55, competencia: 70, dificultad: 30, categoria: "entretenimiento", mvp: "Una app/canal de nicho con una plantilla de contenido repetible y un formato de 15s demostrable; monetizás con marcas o suscripción." },
+    { nombre: "Fintech inclusión",       demanda: 95, monetizacion: 90, competencia: 75, dificultad: 80, categoria: "problema", mvp: "Empezá por un dolor puntual (cobrar, ahorrar, prestar) en un país, con wallet + un flujo de pago. Requiere cumplimiento normativo." },
+    { nombre: "Herramientas IA",         demanda: 80, monetizacion: 64, competencia: 60, dificultad: 55, categoria: "ambos", mvp: "Una herramienta que resuelva UNA tarea concreta (redactar, resumir, automatizar) con IA; cobrás por uso o suscripción baja." },
+    { nombre: "Wallets / BNPL",          demanda: 88, monetizacion: 82, competencia: 78, dificultad: 65, categoria: "problema", mvp: "Integrá 'pagá después' o transferencias A2A en un vertical específico (ej. un rubro de comercios), no como wallet genérica." },
+    { nombre: "Gaming mobile",           demanda: 82, monetizacion: 70, competencia: 72, dificultad: 60, categoria: "entretenimiento", mvp: "Un juego hiper-casual mobile con loop corto y localización real (idioma, cultura, métodos de pago locales)." },
+    { nombre: "EdTech práctica",         demanda: 74, monetizacion: 60, competencia: 55, dificultad: 45, categoria: "problema", mvp: "Micro-cursos de una habilidad con salida laboral clara ('cómo ganar dinero con X'), formato corto y certificación." },
+    { nombre: "HealthTech",              demanda: 70, monetizacion: 68, competencia: 50, dificultad: 70, categoria: "problema", mvp: "Telemedicina o seguimiento de una condición puntual; empezá con agendamiento + seguimiento antes que diagnóstico." },
+    { nombre: "Delivery / comercio",     demanda: 61, monetizacion: 58, competencia: 85, dificultad: 55, categoria: "problema", mvp: "No compitas con los grandes: enfocá un nicho (barrio, rubro, comunidad) con logística simple y relación directa." },
   ],
 
   /* --------- Playbook de MVP --------- */

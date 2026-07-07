@@ -13,7 +13,8 @@
 <header class="site">
   <div class="wrap">
     <div class="brand">📊 Radar LatAm <small>· necesidades → MVP</small></div>
-    <nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false">☰</button>
+    <nav id="navMenu">
       <a href="#entretenimiento">Entretenimiento</a>
       <a href="#problemas">Problemas</a>
       <a href="#oportunidades">Oportunidades</a>
@@ -148,8 +149,46 @@
 
     <div style="margin-top:16px">
       <div class="sec-head" style="margin-bottom:12px">
-        <h2 style="font-size:19px">Ranking de oportunidades por puntaje</h2>
-        <p>Puntaje = demanda 35% · monetización 30% · (menor competencia) 20% · (menor dificultad) 15%.</p>
+        <h2 style="font-size:19px">🎯 Encontrá tu oportunidad</h2>
+        <p>Ajustá esto a <strong>tu</strong> situación: el ranking y la recomendación se recalculan al instante.</p>
+      </div>
+
+      <div class="finder">
+        <div style="margin-bottom:18px">
+          <p class="flabel" style="margin-bottom:9px">¿En qué te querés enfocar?</p>
+          <div class="seg" id="seg-foco" role="group" aria-label="Foco">
+            <button data-val="ambos" aria-pressed="true">Ambos</button>
+            <button data-val="entretenimiento" aria-pressed="false">Entretenimiento</button>
+            <button data-val="problema" aria-pressed="false">Resolver problemas</button>
+          </div>
+        </div>
+
+        <div class="frow">
+          <div class="slider">
+            <p class="flabel">Priorizo <span>demanda / mercado grande</span> <b id="v-dem">50</b></p>
+            <input type="range" id="w-dem" min="0" max="100" value="50" />
+          </div>
+          <div class="slider">
+            <p class="flabel">Priorizo <span>facilidad de entrada</span> <b id="v-fac">50</b></p>
+            <input type="range" id="w-fac" min="0" max="100" value="50" />
+          </div>
+          <div class="slider">
+            <p class="flabel">Priorizo <span>monetización</span> <b id="v-mon">50</b></p>
+            <input type="range" id="w-mon" min="0" max="100" value="50" />
+          </div>
+        </div>
+
+        <div class="foot">
+          <button class="btn-ghost" id="finder-reset">↺ Reiniciar</button>
+          <span style="font-size:12px;color:var(--muted)">Mové los controles y mirá cómo cambia el ranking ↓</span>
+        </div>
+
+        <div class="rec" id="rec-card"></div>
+      </div>
+
+      <div class="sec-head" style="margin:22px 0 12px">
+        <h2 style="font-size:19px">Ranking de oportunidades</h2>
+        <p>Ordenado por tu puntaje personalizado. Tocá cualquier columna para reordenar.</p>
       </div>
       <div id="scoring-table"></div>
     </div>
@@ -201,6 +240,16 @@
       localStorage.setItem("theme", next);
       if (window.__renderAll) window.__renderAll();
     });
+
+    /* menú móvil */
+    const menuBtn = document.getElementById("menuBtn");
+    const nav = document.getElementById("navMenu");
+    const closeNav = () => { nav.classList.remove("open"); menuBtn.setAttribute("aria-expanded", "false"); };
+    menuBtn.addEventListener("click", () => {
+      const open = nav.classList.toggle("open");
+      menuBtn.setAttribute("aria-expanded", String(open));
+    });
+    nav.querySelectorAll("a").forEach(a => a.addEventListener("click", closeNav));
   })();
 </script>
 <script src="assets/data.js"></script>

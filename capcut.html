@@ -1,0 +1,1648 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruta CapCut — de cero a editor que cobra</title>
+<meta name="description" content="Camino de aprendizaje para editar video vertical con CapCut y vender el servicio a empresas y personas. Con recursos y seguimiento de progreso.">
+<style>
+/* ===========================================================================
+   Ruta CapCut — hoja de estilos única.
+   Motivo visual: la línea de tiempo de un editor. Barra de transporte fija,
+   fases como bloques de una pista, keyframes (rombos) como casillas.
+   Tipografía: cara del sistema para lectura, monoespaciada para etiquetas,
+   contadores y timecodes.
+   =========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  --page:      #eef0f3;
+  --surface:   #ffffff;
+  --surface-2: #e4e7ed;
+  --ink:       #12151b;
+  --ink-2:     #3e4653;
+  --muted:     #6e7787;
+  --line:      rgba(18,21,27,.12);
+  --line-2:    rgba(18,21,27,.07);
+
+  --ember:     #c9500f;   /* acento: pista activa, playhead */
+  --ember-sol: #e8631c;   /* relleno del acento */
+  --done:      #0f7d5c;   /* estado: completado */
+  --violet:    #5b4bc4;   /* bloque de estrategia y negocio */
+  --yt:        #c0392b;   /* etiqueta de fuente: YouTube */
+
+  --shadow: 0 1px 2px rgba(18,21,27,.05), 0 8px 24px -16px rgba(18,21,27,.35);
+
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI",
+          system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo,
+          Consolas, "Liberation Mono", monospace;
+
+  --maxw: 1080px;
+  --r: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page:      #0e1116;
+    --surface:   #161a21;
+    --surface-2: #1e242d;
+    --ink:       #edf0f4;
+    --ink-2:     #b6becb;
+    --muted:     #838d9c;
+    --line:      rgba(255,255,255,.13);
+    --line-2:    rgba(255,255,255,.07);
+    --ember:     #ff8a3d;
+    --ember-sol: #f4762a;
+    --done:      #2dbf92;
+    --violet:    #9a8bf0;
+    --yt:        #ff6b5e;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"] {
+  --page:#0e1116; --surface:#161a21; --surface-2:#1e242d;
+  --ink:#edf0f4; --ink-2:#b6becb; --muted:#838d9c;
+  --line:rgba(255,255,255,.13); --line-2:rgba(255,255,255,.07);
+  --ember:#ff8a3d; --ember-sol:#f4762a; --done:#2dbf92; --violet:#9a8bf0; --yt:#ff6b5e;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.9);
+}
+:root[data-theme="light"] {
+  --page:#eef0f3; --surface:#ffffff; --surface-2:#e4e7ed;
+  --ink:#12151b; --ink-2:#3e4653; --muted:#6e7787;
+  --line:rgba(18,21,27,.12); --line-2:rgba(18,21,27,.07);
+  --ember:#c9500f; --ember-sol:#e8631c; --done:#0f7d5c; --violet:#5b4bc4; --yt:#c0392b;
+  --shadow: 0 1px 2px rgba(18,21,27,.05), 0 8px 24px -16px rgba(18,21,27,.35);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { width: 100%; max-width: var(--maxw); margin-inline: auto; padding-inline: 20px; }
+
+/* ---------- barra de transporte ---------- */
+.transport {
+  position: sticky; top: 0; z-index: 60;
+  background: color-mix(in srgb, var(--page) 90%, transparent);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border-bottom: 1px solid var(--line);
+}
+.transport .wrap { display: flex; align-items: center; gap: 14px; min-height: 62px; padding-block: 9px; flex-wrap: wrap; }
+.tp-id { display: flex; align-items: baseline; gap: 9px; margin-right: auto; }
+.tp-id b { font-size: 15px; font-weight: 700; letter-spacing: -.015em; }
+.tp-id span { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+.counter {
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-size: 12px; color: var(--ink-2); white-space: nowrap;
+}
+.counter b { color: var(--ink); font-size: 15px; font-weight: 700; }
+
+.tp-actions { display: flex; gap: 6px; }
+.btn {
+  font: inherit; font-size: 12px; font-family: var(--mono); letter-spacing: .02em;
+  color: var(--ink-2); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 9px; padding: 7px 11px; cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.btn:hover { background: var(--surface-2); color: var(--ink); }
+.btn[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); background: color-mix(in srgb, var(--ember) 10%, var(--surface)); }
+.btn:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* pista de progreso global */
+.scrub { width: 100%; height: 6px; background: var(--surface-2); position: relative; overflow: hidden; }
+.scrub-fill { height: 100%; width: 0%; background: var(--ember-sol); transition: width .35s cubic-bezier(.4,0,.2,1); }
+.scrub-head {
+  position: absolute; top: -3px; bottom: -3px; width: 2px; left: 0;
+  background: var(--ink); transition: left .35s cubic-bezier(.4,0,.2,1);
+}
+
+/* ---------- encabezado ---------- */
+.hero { padding: 56px 0 34px; }
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--ember); margin: 0 0 14px;
+}
+h1 {
+  font-size: clamp(32px, 6vw, 52px); line-height: 1.05; letter-spacing: -.03em;
+  margin: 0 0 18px; text-wrap: balance; font-weight: 800;
+}
+.lede { font-size: 18px; color: var(--ink-2); max-width: 62ch; margin: 0 0 26px; }
+.lede strong { color: var(--ink); font-weight: 650; }
+
+.facts { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
+.fact {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 9px 13px; display: flex; align-items: baseline; gap: 8px;
+}
+.fact b { font-family: var(--mono); font-size: 17px; font-variant-numeric: tabular-nums; }
+.fact span { font-size: 12.5px; color: var(--muted); }
+
+.howto {
+  background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--ember);
+  border-radius: var(--r); padding: 20px 22px; box-shadow: var(--shadow);
+}
+.howto h2 { font-size: 14px; margin: 0 0 10px; letter-spacing: -.01em; }
+.howto ol { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 14.5px; }
+.howto li { margin-bottom: 5px; }
+.howto li:last-child { margin-bottom: 0; }
+
+/* ---------- fases ---------- */
+.track { padding: 40px 0 20px; display: flex; flex-direction: column; gap: 18px; }
+
+.phase {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+  box-shadow: var(--shadow); overflow: hidden;
+  border-left: 3px solid var(--clip, var(--muted));
+  transition: opacity .25s ease;
+}
+.phase[data-complete="true"] { border-left-color: var(--done); }
+.phase.dim { opacity: .45; }
+
+.phase > summary {
+  list-style: none; cursor: pointer; padding: 18px 22px;
+  display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: center;
+}
+.phase > summary::-webkit-details-marker { display: none; }
+.phase > summary:hover { background: var(--surface-2); }
+
+.ph-meta {
+  grid-column: 1 / -1;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.ph-meta .tag { color: var(--clip, var(--ember)); font-weight: 700; }
+.ph-meta .sep { width: 1px; height: 11px; background: var(--line); }
+
+.ph-title { font-size: 21px; font-weight: 700; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.ph-goal { grid-column: 1; font-size: 14.5px; color: var(--ink-2); margin: 0; max-width: 60ch; }
+
+.ph-gauge { grid-column: 2; grid-row: 2 / span 2; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.ph-gauge .num { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.ph-bar { width: 96px; height: 4px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.ph-bar i { display: block; height: 100%; width: 0; background: var(--clip, var(--ember)); transition: width .3s ease; }
+.phase[data-complete="true"] .ph-bar i { background: var(--done); }
+
+.ph-body { padding: 4px 22px 22px; border-top: 1px solid var(--line-2); }
+
+/* ---------- skills ---------- */
+.skills { list-style: none; margin: 0; padding: 0; }
+.skill { display: flex; gap: 13px; padding: 12px 0; border-bottom: 1px solid var(--line-2); align-items: flex-start; }
+.skill:last-child { border-bottom: 0; }
+.skill.hide { display: none; }
+
+.skill label, .deliver label { display: block; cursor: pointer; flex: 0 0 auto; padding-top: 3px; }
+input[type="checkbox"][data-id] { position: absolute; opacity: 0; width: 0; height: 0; }
+
+/* keyframe: rombo, como en la línea de tiempo */
+.kf {
+  display: block; width: 15px; height: 15px; transform: rotate(45deg);
+  border: 1.5px solid var(--muted); border-radius: 2px; background: transparent;
+  transition: background .18s ease, border-color .18s ease;
+}
+label:hover > .kf { border-color: var(--ember); }
+input[type="checkbox"][data-id]:checked + .kf { background: var(--done); border-color: var(--done); }
+input[type="checkbox"][data-id]:focus-visible + .kf { outline: 2px solid var(--ember); outline-offset: 3px; }
+
+.sk-body { min-width: 0; flex: 1; }
+.sk-name { font-weight: 600; font-size: 15.5px; letter-spacing: -.01em; }
+.skill:has(input:checked) .sk-name,
+.deliver:has(input:checked) .sk-name {
+  color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px;
+}
+.sk-note { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+.sk-note em { font-style: italic; color: inherit; }
+
+/* recursos */
+.res { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.res a {
+  display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
+  font-size: 12.5px; text-decoration: none; color: var(--ink-2);
+  background: var(--surface-2); border: 1px solid transparent; border-radius: 8px;
+  padding: 4px 10px 4px 5px; transition: border-color .15s ease, color .15s ease;
+}
+.res a:hover { color: var(--ink); border-color: var(--line); }
+.res a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.res a::before {
+  content: attr(data-src);
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 5px; border-radius: 5px; flex: 0 0 auto;
+  background: var(--page); color: var(--muted); border: 1px solid var(--line-2);
+}
+.res a[data-src="YouTube"]::before { color: var(--yt); }
+.res a[data-src="Platzi"]::before { color: var(--done); }
+.res a[data-src="Buscar"]::before { color: var(--ember); }
+
+/* entregable */
+.deliver {
+  margin-top: 16px; background: var(--page); border: 1px dashed var(--line);
+  border-radius: 10px; padding: 13px 16px; display: flex; gap: 13px; align-items: flex-start;
+}
+.deliver .tagline {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ember); display: block; margin-bottom: 2px;
+}
+.deliver label { padding-top: 4px; }
+
+/* ---------- secciones de referencia ---------- */
+.section { padding: 34px 0; border-top: 1px solid var(--line); }
+.section h2 { font-size: 25px; letter-spacing: -.025em; margin: 0 0 6px; font-weight: 750; }
+.section > .wrap > p.sub { color: var(--ink-2); margin: 0 0 22px; max-width: 62ch; font-size: 15px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 17px 19px; box-shadow: var(--shadow);
+}
+.card h3 { font-size: 13px; margin: 0 0 4px; font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ember); font-weight: 600; }
+.card p { font-size: 14px; color: var(--ink-2); margin: 0 0 11px; }
+.card ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.card ul a { font-size: 14px; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+.card ul a:hover { border-bottom-color: var(--ember); color: var(--ember); }
+.card ul li small { display: block; color: var(--muted); font-size: 12.5px; }
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); }
+table { border-collapse: collapse; width: 100%; min-width: 540px; font-size: 14px; }
+th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line-2); }
+th { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--surface-2); }
+
+footer.site { padding: 34px 0 60px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+footer.site p { margin: 0 0 8px; max-width: 68ch; }
+footer.site a { color: var(--ink-2); }
+footer.site code { font-family: var(--mono); font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+
+@media (max-width: 620px) {
+  .hero { padding: 38px 0 26px; }
+  .phase > summary { padding: 15px 16px; grid-template-columns: 1fr; }
+  .ph-gauge { grid-column: 1; grid-row: auto; flex-direction: row; align-items: center; gap: 10px; }
+  .ph-body { padding: 4px 16px 18px; }
+  .tp-id b { font-size: 14px; }
+  .tp-id span { display: none; }
+  .transport .wrap { min-height: 0; padding-block: 8px; gap: 8px 10px; }
+  .btn { padding: 5px 9px; font-size: 11.5px; }
+  .counter b { font-size: 14px; }
+  .res a { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="transport">
+  <div class="wrap">
+    <div class="tp-id">
+      <b>Ruta CapCut</b>
+      <span>video vertical → servicio</span>
+    </div>
+    <div class="counter"><b id="pct">0%</b> · <span id="cnt">0 / 0</span></div>
+    <div class="tp-actions">
+      <button class="btn" id="filterBtn" aria-pressed="false" title="Ocultar lo que ya marcaste">Pendientes</button>
+      <button class="btn" id="themeBtn" title="Cambiar entre tema claro y oscuro">Tema</button>
+      <button class="btn" id="resetBtn" title="Borrar todo el progreso guardado">Reiniciar</button>
+    </div>
+  </div>
+  <div class="scrub"><div class="scrub-fill" id="scrubFill"></div><div class="scrub-head" id="scrubHead"></div></div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Plan de 14 semanas · Reels · Shorts · TikTok</p>
+    <h1>De cero a editor de video vertical que cobra por su trabajo</h1>
+    <p class="lede">
+      Diez bloques ordenados por dependencia: cada uno se apoya en el anterior y termina en
+      una pieza real que podés mostrar. Las primeras ocho fases te vuelven <strong>competente
+      técnicamente</strong>; las dos últimas convierten esa competencia en <strong>un servicio
+      que se vende</strong>. Marcá cada casilla a medida que avanzás — el progreso se guarda
+      en este navegador.
+    </p>
+
+    <div class="facts">
+      <div class="fact"><b>10</b><span>fases</span></div>
+      <div class="fact"><b id="factSkills">—</b><span>habilidades</span></div>
+      <div class="fact"><b>10</b><span>entregables de portafolio</span></div>
+      <div class="fact"><b>14</b><span>semanas a ritmo real</span></div>
+    </div>
+
+    <div class="howto">
+      <h2>Cómo usar esta ruta</h2>
+      <ol>
+        <li>Hacé las fases en orden. Saltarte la 01 (lenguaje del video corto) es el error que hace que un editor técnico nunca despegue.</li>
+        <li>Por cada habilidad: mirá <em>un</em> recurso, aplicalo el mismo día en un video propio. Ver diez tutoriales sin editar no cuenta como avance.</li>
+        <li>No cierres una fase sin su <strong>entregable</strong>. Esos diez archivos son tu portafolio cuando llegues a la fase de negocio.</li>
+        <li>Los cursos de Platzi son la columna teórica; YouTube resuelve el "cómo se hace este efecto exacto". Usá los dos, no uno solo.</li>
+      </ol>
+    </div>
+  </div>
+</header>
+
+<main class="wrap track" id="track">
+
+  <!-- ================= FASE 00 ================= -->
+  <details class="phase" open style="--clip: var(--ember)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 00</span><i class="sep"></i><span>Semana 1</span><i class="sep"></i><span>Base técnica</span>
+      </div>
+      <h2 class="ph-title">Montar el taller y cortar sin miedo</h2>
+      <p class="ph-goal">Que la herramienta deje de estorbarte: instalar, entender la interfaz, cortar limpio y exportar un archivo que las plataformas no destrocen.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/8</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f0-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Instalar CapCut en celular y en PC, y saber para qué sirve cada uno</div>
+            <div class="sk-note">Móvil para captar y editar rápido; escritorio para trabajo de cliente: más pistas, atajos, LUTs y control fino. Vas a usar los dos, no elijas.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/watch?v=fgockQqpW48" data-src="YouTube"><span>CapCut Desde Cero: curso completo para principiantes (2026)</span></a>
+              <a href="https://www.youtube.com/watch?v=GD6tD1zf2eY" data-src="YouTube"><span>Cómo editar en CapCut PC desde cero (2026)</span></a>
+              <a href="https://platzi.com/cursos/capcut/" data-src="Platzi"><span>Curso de Edición de Video con CapCut — 18 clases</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f0-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Leer la interfaz: línea de tiempo, pistas, previsualización, panel de propiedades</div>
+            <div class="sk-note">Saber dónde vive cada control te ahorra horas. Aprendé el menú principal antes que cualquier efecto.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/capcut/menu-principal-de-capcut-explicado/" data-src="Platzi"><span>Menú principal de CapCut explicado</span></a>
+              <a href="https://www.youtube.com/watch?v=XBxO6Jr5NSA" data-src="YouTube"><span>Tutorial completo de CapCut de computadora (actualizado)</span></a>
+              <a href="https://aprendergratis.es/recursos/cap-cut/" data-src="Guía"><span>CapCut Guía Maestra: módulo por módulo</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f0-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Cortes básicos: dividir, recortar, borrar, reordenar, duplicar</div>
+            <div class="sk-note">El 80% de un short es esto hecho rápido y sin dudar. Practicalo hasta que sea muscular.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/capcut/opciones-de-recorte-de-clips/" data-src="Platzi"><span>Opciones de recorte de clips</span></a>
+              <a href="https://www.youtube.com/watch?v=ZauE_EttW20" data-src="YouTube"><span>Curso completo de CapCut desde el celular (2026)</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f0-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Lienzo 9:16 y zonas seguras de cada red</div>
+            <div class="sk-note">1080×1920. Los botones de TikTok/Reels tapan el borde derecho y los últimos ~20% de abajo: ahí no va texto ni la cara de nadie.</div>
+            <div class="res">
+              <a href="https://losvideosdemaurits.com/formatos-de-video-vertical-guia-tecnica-para-reels-tiktok-y-youtube-shorts-en-2026/" data-src="Guía"><span>Formatos de video vertical: guía técnica 2026</span></a>
+              <a href="https://edicionvideopro.com/en/editing-techniques/916-aspect-ratio-guide-vertical-video-for-tiktok-reels/" data-src="Guía"><span>Formato 9:16 para TikTok y Reels</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f0-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Exportar con los ajustes correctos</div>
+            <div class="sk-note">MP4 · H.264 · 1080×1920 · 30 fps · 10–15 Mbps · audio AAC 48 kHz. Exportar mal es la razón #1 por la que un video "se ve pixelado" después de subirlo.</div>
+            <div class="res">
+              <a href="https://edicionvideopro.com/optimizacion-y-exportacion/exportar-video-ajustes-optimos-youtube-ig-tiktok/" data-src="Guía"><span>Ajustes óptimos de exportación (YouTube, IG, TikTok)</span></a>
+              <a href="https://letaca.com/medidas-de-video-redes-sociales/" data-src="Guía"><span>Medidas y formatos de video para redes sociales</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f0-6"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Organizar proyectos, material y respaldos</div>
+            <div class="sk-note">Una carpeta por cliente / mes / pieza, nombres con fecha y versión (<em>cliente_tema_v02</em>). Cuando tengas 5 clientes esto deja de ser opcional.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/results?search_query=organizar+proyectos+edici%C3%B3n+de+video+carpetas+flujo+de+trabajo" data-src="Buscar"><span>Buscar: organización de proyectos de edición</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f0-7"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Hacer el curso de CapCut de Platzi completo</div>
+            <div class="sk-note">18 clases: interfaz, recorte, texto, audio, efectos y exportación para redes. Es tu base ordenada; el resto de la ruta profundiza sobre ella.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/capcut/" data-src="Platzi"><span>Curso de Edición de Video con CapCut</span></a>
+              <a href="https://platzi.com/ruta/creacion-audiovisual/" data-src="Platzi"><span>Ruta de Creación Audiovisual (contexto general)</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f0-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 00</span>
+          <div class="sk-name">Un video de 15 segundos, cortado limpio, exportado en 1080×1920</div>
+          <div class="sk-note">Sin efectos. Solo cortes y una exportación correcta. Miralo en tu celular antes de darlo por bueno.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ================= FASE 01 ================= -->
+  <details class="phase" style="--clip: var(--ember)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 01</span><i class="sep"></i><span>Semana 2</span><i class="sep"></i><span>Criterio</span>
+      </div>
+      <h2 class="ph-title">El lenguaje del video corto</h2>
+      <p class="ph-goal">La fase que separa a un operador de software de un editor. Acá aprendés por qué un corte va donde va y qué hace que alguien no deslice el dedo.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/8</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f1-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Planos y encuadre pensados para vertical</div>
+            <div class="sk-note">Plano medio, primer plano y detalle. En 9:16 el plano general casi nunca funciona: la pantalla es pequeña y el sujeto se pierde.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/bites-produccion-audiovisual/" data-src="Platzi"><span>Bites de Producción Audiovisual</span></a>
+              <a href="https://platzi.com/cursos/estrategia-video/" data-src="Platzi"><span>Curso de Planeación y Estrategia de Video</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f1-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Ritmo: un corte cada 2–4 segundos, jump cut, J-cut y L-cut</div>
+            <div class="sk-note">El jump cut sostiene el pulso; el J/L-cut (audio que entra antes o sale después de la imagen) es lo que hace que un corte no se sienta brusco.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/results?search_query=jump+cut+j-cut+l-cut+edici%C3%B3n+explicado+espa%C3%B1ol" data-src="Buscar"><span>Buscar: jump cut, J-cut y L-cut explicados</span></a>
+              <a href="https://www.oferplay.com/hook-layering-como-enganchar-en-3-segundos-y-mantener-la-atencion/" data-src="Guía"><span>Estímulo visual continuo: cortes, zooms y texto</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f1-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">El hook: ganar los primeros 3 segundos</div>
+            <div class="sk-note">Triple refuerzo — lo que se ve, lo que se escucha y lo que se lee dicen lo mismo. Si perdés al espectador ahí, el algoritmo deja de repartir el video.</div>
+            <div class="res">
+              <a href="https://www.go-viral.app/blog/hook-first-3-seconds/" data-src="Guía"><span>Los primeros 3 segundos: enganchar en TikTok y Reels</span></a>
+              <a href="https://rutacreadora.com/ejemplos-de-hooks-potentes-para-videos-cortos/" data-src="Guía"><span>Ejemplos de hooks potentes (modelo rellenable)</span></a>
+              <a href="https://oinkmygod.com/blog/hooks-reels/" data-src="Guía"><span>Hooks para Reels: ganchos que retienen</span></a>
+              <a href="https://platzi.com/cursos/intro-contenido/como-incrementar-retencion-con-capcut/" data-src="Platzi"><span>Cómo incrementar retención con CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f1-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Estructura de un short: hook → contexto → valor → cierre</div>
+            <div class="sk-note">Y el <em>loop</em>: terminar de forma que el primer frame vuelva a tener sentido, para que el video se re-reproduzca.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/estrategia-video/" data-src="Platzi"><span>Planeación y Estrategia de Video</span></a>
+              <a href="https://snshelper.com/es/blog/youtube-hooks" data-src="Guía"><span>Guía de hooks y estructura para retención</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f1-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Escribir guion para 30–60 segundos</div>
+            <div class="sk-note">Frases cortas, una idea por frase, escrito para el oído. Un guion flojo no se arregla con efectos — es la lección más cara del oficio.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/copy-storytelling/" data-src="Platzi"><span>Curso de Copywriting con Técnicas de Storytelling</span></a>
+              <a href="https://platzi.com/cursos/storytelling/" data-src="Platzi"><span>Curso de Storytelling</span></a>
+              <a href="https://platzi.com/ruta/copywriter/" data-src="Platzi"><span>Ruta: Copywriting y storytelling para contenidos</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f1-6"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Storytelling aplicado a marca, no solo a creador</div>
+            <div class="sk-note">Una empresa no quiere "hacerse viral": quiere que la recuerden y le compren. Cambia el criterio de edición por completo.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/storytellingmarcapersonal/" data-src="Platzi"><span>Curso de Storytelling para marca</span></a>
+              <a href="https://thekingofcontent.agency/blog/como-crear-contenido-viral-marcas-hook" data-src="Guía"><span>La ciencia del hook para marcas</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f1-7"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Estudiar 20 videos que funcionan y desarmarlos</div>
+            <div class="sk-note">Anotá segundo a segundo: qué pasa en el 0–3, cada cuánto corta, cuándo entra el texto, cuándo entra la música. Es el ejercicio que más rápido te sube el nivel.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/instagram-reel/" data-src="Platzi"><span>Curso de Creación de Videos para Instagram</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f1-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 01</span>
+          <div class="sk-name">Un guion de 45 segundos y tres hooks distintos para el mismo tema</div>
+          <div class="sk-note">Grabá los tres inicios y compará cuál aguanta mejor. Guardalo: es la muestra de que pensás antes de editar.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ================= FASE 02 ================= -->
+  <details class="phase" style="--clip: var(--ember)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 02</span><i class="sep"></i><span>Semana 3</span><i class="sep"></i><span>Técnica</span>
+      </div>
+      <h2 class="ph-title">Texto y subtítulos</h2>
+      <p class="ph-goal">La mayoría mira sin sonido. Los subtítulos no son un extra: son la mitad del video, y un estilo propio y consistente es lo primero que un cliente nota.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/7</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f2-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Subtítulos automáticos y corrección del texto</div>
+            <div class="sk-note">CapCut transcribe solo; tu trabajo es corregir nombres propios, cortar líneas donde respira la frase y borrar muletillas.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/watch?v=x00WLv5r1I8" data-src="YouTube"><span>Cómo poner subtítulos automáticos con CapCut</span></a>
+              <a href="https://platzi.com/cursos/capcut/edicion-de-texto/" data-src="Platzi"><span>Edición de textos y subtítulos en CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f2-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Estilo de subtítulo legible: fuente, tamaño, contorno, sombra</div>
+            <div class="sk-note">Contorno grueso o caja de fondo para que se lea sobre cualquier imagen. Un tamaño que funcione en un celular a 30 cm, no en tu monitor.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/watch?v=W11D8-20vZI" data-src="YouTube"><span>El truco de subtítulos virales que todos usan en CapCut</span></a>
+              <a href="https://www.youtube.com/watch?v=D6NiNzlSF8E" data-src="YouTube"><span>Subtítulos animados rápido y fácil</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f2-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Subtítulos animados y estilo karaoke (palabra por palabra)</div>
+            <div class="sk-note">Resaltar la palabra que se está diciendo sube la retención. Usalo con criterio: en contenido corporativo puede sobrar.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/watch?v=gbFtmEwuhgA" data-src="YouTube"><span>Subtítulos animados en tus videos, fácil</span></a>
+              <a href="https://www.youtube.com/shorts/9AFmW7xPpjY" data-src="YouTube"><span>Subtítulos tipo karaoke en CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f2-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Texto de apoyo: títulos, remates y jerarquía tipográfica</div>
+            <div class="sk-note">Máximo dos niveles de texto en pantalla. Si todo grita, nada se lee.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/capcut/efectos-animaciones-y-estilos-para-clips/" data-src="Platzi"><span>Animaciones, estilos y efectos para clips</span></a>
+              <a href="https://www.youtube.com/results?search_query=tipograf%C3%ADa+para+video+vertical+jerarqu%C3%ADa+texto+reels" data-src="Buscar"><span>Buscar: tipografía y jerarquía en video vertical</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f2-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Guardar tu estilo como plantilla reutilizable</div>
+            <div class="sk-note">Un preset de subtítulo por cliente. Te ahorra 10 minutos por video y garantiza consistencia de marca — eso es lo que te van a pagar.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/results?search_query=capcut+guardar+preset+estilo+de+texto+plantilla" data-src="Buscar"><span>Buscar: guardar presets de texto en CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f2-6"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Legibilidad y accesibilidad: contraste y velocidad de lectura</div>
+            <div class="sk-note">Dos o tres palabras por línea, máximo dos líneas. Si el ojo no alcanza a leerlo antes del corte, el texto no existe.</div>
+            <div class="res">
+              <a href="https://www.capcut.com/es-es/resource/how-to-add-a-subtitle-to-a-youtube-video" data-src="Guía"><span>Guía oficial: subtítulos paso a paso</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f2-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 02</span>
+          <div class="sk-name">Tu sistema de subtítulos: tres estilos guardados como plantilla</div>
+          <div class="sk-note">Uno enérgico (creador), uno sobrio (empresa), uno editorial (marca premium). Con captura de cada uno.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ================= FASE 03 ================= -->
+  <details class="phase" style="--clip: var(--ember)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 03</span><i class="sep"></i><span>Semana 4</span><i class="sep"></i><span>Técnica</span>
+      </div>
+      <h2 class="ph-title">Movimiento, velocidad y efectos</h2>
+      <p class="ph-goal">Todo lo que hace que un video "se sienta editado". El objetivo no es usar más efectos, es saber cuál usar y cuándo no usar ninguno.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/9</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f3-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Keyframes: posición, escala, rotación y opacidad</div>
+            <div class="sk-note">La herramienta más importante de CapCut. Dos puntos en el tiempo y el programa interpola: de ahí sale todo el movimiento.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/watch?v=C3QEdWWlZq0" data-src="YouTube"><span>¿Qué son los keyframes? Fotogramas clave en CapCut</span></a>
+              <a href="https://www.youtube.com/watch?v=fg2QMa5NGTI" data-src="YouTube"><span>Keyframes sobre efectos en CapCut PC</span></a>
+              <a href="https://www.capcut.com/es-es/resource/how-to-add-keyframes-in-capcut" data-src="Guía"><span>Guía oficial de fotogramas clave</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f3-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Punch-in y zoom dinámico</div>
+            <div class="sk-note">Acercarse un 5–15% en la palabra clave. Es el recurso que más retención agrega por minuto de trabajo invertido.</div>
+            <div class="res">
+              <a href="https://www.capcut.com/es-es/resource/how-to-zoom-in-on-video" data-src="Guía"><span>Cómo hacer zoom en video, paso a paso</span></a>
+              <a href="https://tecnobits.com/zoom-automatico-a-la-cara-en-capcut-guia-completa/" data-src="Guía"><span>Zoom automático a la cara en CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f3-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Velocidad: cámara lenta, rápida y curvas (speed ramp)</div>
+            <div class="sk-note">La rampa de velocidad convierte un corte plano en un golpe rítmico. Presets tipo <em>Jump Cut</em> y <em>Hero</em>, o curva propia.</div>
+            <div class="res">
+              <a href="https://www.capcut.com/es-es/tools/speed-ramp" data-src="Guía"><span>Efectos de curva de velocidad</span></a>
+              <a href="https://filmora.wondershare.es/video-editing/capcut-speed-ramp.html" data-src="Guía"><span>Guía de rampas de velocidad en CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f3-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Transiciones: cuáles usar y cuáles no volver a tocar</div>
+            <div class="sk-note">En video corto profesional: corte seco, whip pan, match cut y poco más. Las transiciones decorativas de librería envejecen mal y abaratan una marca.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/watch?v=BkTuO3I6d98" data-src="YouTube"><span>Cómo hacer transiciones suaves en CapCut</span></a>
+              <a href="https://www.youtube.com/watch?v=ZlZV4mt6P6k" data-src="YouTube"><span>Transiciones creativas usando CapCut</span></a>
+              <a href="https://35mm.es/transiciones-videos-youtube/" data-src="Guía"><span>Qué transiciones funcionan de verdad</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f3-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Máscaras y superposiciones (PiP)</div>
+            <div class="sk-note">Máscara lineal, circular y espejo; capas encima del video para mostrar una captura de pantalla, un producto o un dato mientras alguien habla.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/capcut/opciones-de-recorte-de-clips/" data-src="Platzi"><span>Recorte, máscaras y capas</span></a>
+              <a href="https://www.youtube.com/results?search_query=capcut+m%C3%A1scaras+superposici%C3%B3n+overlay+tutorial+espa%C3%B1ol" data-src="Buscar"><span>Buscar: máscaras y overlays en CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f3-6"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Chroma key y quitar fondo automático</div>
+            <div class="sk-note">Para poner a alguien sobre una gráfica, un producto o una captura. El recorte automático de CapCut resuelve el 90% de los casos sin fondo verde.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/capcut/efectos-especiales-en-capcut-fondo-chrom/" data-src="Platzi"><span>Efectos especiales: fondo, chroma key y recorte</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f3-7"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Estabilización, auto reframe y retoque</div>
+            <div class="sk-note">Auto reframe convierte un video horizontal de cliente en vertical siguiendo al sujeto: es un servicio vendible por sí solo (reciclar material viejo).</div>
+            <div class="res">
+              <a href="https://www.youtube.com/watch?v=T_taucDQaf0" data-src="YouTube"><span>CapCut para PC: tutorial completo de herramientas</span></a>
+              <a href="https://www.capcut.com/es-es/tools/ai-video-editor" data-src="Guía"><span>Herramientas automáticas de CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f3-8"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Criterio: dosificar efectos según el cliente</div>
+            <div class="sk-note">Un creador de humor aguanta glitch y zoom agresivo; un estudio contable no. Saber bajar el volumen visual es una habilidad, no una limitación.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/instagram-reel/" data-src="Platzi"><span>Creación de Videos para Instagram</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f3-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 03</span>
+          <div class="sk-name">Un reel de 20 segundos con punch-ins, una rampa de velocidad y una máscara</div>
+          <div class="sk-note">Y una segunda versión del mismo video en tono sobrio, sin efectos. Mostrar las dos es un argumento de venta muy fuerte.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ================= FASE 04 ================= -->
+  <details class="phase" style="--clip: var(--ember)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 04</span><i class="sep"></i><span>Semana 5</span><i class="sep"></i><span>Técnica</span>
+      </div>
+      <h2 class="ph-title">Audio: la mitad que nadie ve</h2>
+      <p class="ph-goal">Un video feo con buen audio se tolera; uno bonito con audio malo se abandona en dos segundos. Acá está el salto de calidad más barato que existe.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/7</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f4-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Separar audio, reducir ruido y mejorar la voz</div>
+            <div class="sk-note">Las tres herramientas de CapCut que arreglan una grabación mediocre: reducción de ruido, realce de voz y separación de voz/música.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/capcut/herramientas-de-audio-en-capcut/" data-src="Platzi"><span>Herramientas de audio en CapCut</span></a>
+              <a href="https://www.capcut.com/es-es/resource/split-sound-from-video" data-src="Guía"><span>Separar el sonido del video</span></a>
+              <a href="https://www.capcut.com/es-es/resource/edit-voice-recording" data-src="Guía"><span>Editar una grabación de voz profesionalmente</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f4-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Mezcla: niveles de voz, música y efectos</div>
+            <div class="sk-note">La voz manda; la música va claramente por debajo y baja aún más cuando alguien habla (<em>ducking</em>). Revisá siempre con auriculares y con el parlante del celular.</div>
+            <div class="res">
+              <a href="https://tutoriales.com/video-edicion/youtube/domina-la-edicion-de-sonido-en-capcut-mejora-tus-videos-de-youtube-con-audio-profesional" data-src="Guía"><span>Edición de sonido en CapCut: niveles y mezcla</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f4-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Diseño sonoro: SFX, whooshes, risers, impactos</div>
+            <div class="sk-note">Un efecto sutil en cada transición y en cada aparición de texto. Es lo que hace que un video "suene caro".</div>
+            <div class="res">
+              <a href="https://www.pippit.ai/es-es/blog/capcut-alternative/how-to-add-sound-effects-on-capcut" data-src="Guía"><span>Cómo agregar efectos de sonido en CapCut</span></a>
+              <a href="https://pixabay.com/es/sound-effects/" data-src="Recurso"><span>Pixabay: efectos de sonido gratis</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f4-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Cortar al ritmo de la música</div>
+            <div class="sk-note">Marcar los beats y hacer coincidir los cortes. Convierte una secuencia de clips en algo que se siente coreografiado.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/results?search_query=capcut+cortar+al+ritmo+de+la+m%C3%BAsica+beat+marcadores" data-src="Buscar"><span>Buscar: cortar al beat en CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f4-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Música y licencias: qué podés usar en trabajo pagado</div>
+            <div class="sk-note">Clave para clientes: la música de la librería de TikTok no siempre sirve para una marca. Aprendé la diferencia entre <em>libre de regalías</em> y <em>gratis</em>, y quién responde si llega un reclamo.</div>
+            <div class="res">
+              <a href="https://www.epidemicsound.com/es/advertising/copyright-free-music-explained/" data-src="Guía"><span>Música sin copyright: qué significa realmente</span></a>
+              <a href="https://www.epidemicsound.com/es/music/" data-src="Recurso"><span>Epidemic Sound (suscripción, uso comercial)</span></a>
+              <a href="https://pixabay.com/es/music/" data-src="Recurso"><span>Pixabay Music (gratis, sin atribución)</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f4-6"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Voz en off y texto a voz</div>
+            <div class="sk-note">Para videos sin cara: narración propia o TTS de CapCut. Útil para clientes que no quieren aparecer en cámara — un nicho entero.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/capcut/" data-src="Platzi"><span>Curso de CapCut (módulo de voz y audio)</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f4-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 04</span>
+          <div class="sk-name">El mismo video en dos versiones: con y sin diseño sonoro</div>
+          <div class="sk-note">Es la demostración más convincente que vas a tener en una llamada de venta.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ================= FASE 05 ================= -->
+  <details class="phase" style="--clip: var(--ember)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 05</span><i class="sep"></i><span>Semana 6</span><i class="sep"></i><span>Técnica</span>
+      </div>
+      <h2 class="ph-title">Color e imagen</h2>
+      <p class="ph-goal">Que todos los clips de una pieza —y de una cuenta entera— se vean como si los hubiera filmado la misma persona el mismo día.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/6</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f5-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Corrección vs. gradación: qué es cada cosa</div>
+            <div class="sk-note">Primero corregís (que la imagen sea correcta: exposición, blancos), después graduás (que tenga un look). En ese orden, siempre.</div>
+            <div class="res">
+              <a href="https://www.capcut.com/es-es/resource/color-grading-vs-color-correction/" data-src="Guía"><span>Corrección vs. gradación de color</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f5-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Ajustes base: exposición, contraste, balance de blancos</div>
+            <div class="sk-note">Con esto solo ya arreglás la mayoría del material grabado con celular en interiores.</div>
+            <div class="res">
+              <a href="https://www.capcut.com/es-es/tools/video-color-correction" data-src="Guía"><span>Corrección de color en CapCut</span></a>
+              <a href="https://filmora.wondershare.es/mobile-editing-tips/coloring-capcut.html" data-src="Guía"><span>Cómo colorear en CapCut: guía 2026</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f5-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">HSL, curvas y ruedas de color</div>
+            <div class="sk-note">Control fino: separar el tono de piel del fondo, bajar un verde que domina, levantar sombras sin lavar la imagen.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/results?search_query=capcut+pc+curvas+HSL+ruedas+de+color+tutorial+espa%C3%B1ol" data-src="Buscar"><span>Buscar: HSL y curvas en CapCut PC</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f5-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">LUTs: instalarlas y aplicarlas de forma consistente</div>
+            <div class="sk-note">Una LUT no reemplaza corregir antes. Aplicá la misma a toda la pieza y ajustá clip por clip la intensidad.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/watch?v=Bj9mbxGG50g" data-src="YouTube"><span>LUTs cinemáticos y corrección de color en CapCut PC</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f5-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Look de marca: mismo color en toda la cuenta</div>
+            <div class="sk-note">Definí un look por cliente y guardalo. La coherencia visual de un feed es un entregable que se cobra aparte.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/fotografia/" data-src="Platzi"><span>Curso de Fotografía: principios y técnicas</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f5-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 05</span>
+          <div class="sk-name">Un antes/después de color en pantalla dividida</div>
+          <div class="sk-note">Con tres clips grabados en condiciones distintas, unificados al mismo look.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ================= FASE 06 ================= -->
+  <details class="phase" style="--clip: var(--ember)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 06</span><i class="sep"></i><span>Semana 7</span><i class="sep"></i><span>Producción</span>
+      </div>
+      <h2 class="ph-title">Grabar, no solo editar</h2>
+      <p class="ph-goal">El editor que además sabe cómo debería venir grabado el material vale el doble: puede dirigir al cliente y evitar problemas antes de que existan.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/7</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f6-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Configurar la cámara del celular: resolución, fps, foco y exposición bloqueados</div>
+            <div class="sk-note">Grabar en 4K te da margen para reencuadrar dentro de un 1080 vertical sin perder calidad.</div>
+            <div class="res">
+              <a href="https://support.google.com/youtube/answer/12948118?hl=es-419" data-src="Guía"><span>YouTube: sugerencias oficiales para grabar con móvil</span></a>
+              <a href="https://www.youtube.com/playlist?list=PL4pKw-Sdm7PYPy72rC2N5kJCmzZ44dr9S" data-src="YouTube"><span>Playlist: cómo grabar video con tu celular</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f6-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Iluminación básica</div>
+            <div class="sk-note">Luz suave a 3/4 del rostro, sujeto separado del fondo, nunca una ventana detrás. Con eso y nada más ya estás arriba del promedio.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/tecnicas-iluminacion/" data-src="Platzi"><span>Curso de Técnicas de Fotografía e Iluminación</span></a>
+              <a href="https://www.thekeyitem.com/blog/como-grabar-videos-con-tu-celular" data-src="Guía"><span>Fondo, iluminación, audio y cámara: guía práctica</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f6-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Capturar buen audio en el rodaje</div>
+            <div class="sk-note">Micrófono de solapa cerca de la boca, habitación con alfombras o cortinas, nunca a metros del celular. Arreglar audio malo en la edición es imposible; evitarlo es gratis.</div>
+            <div class="res">
+              <a href="https://rbgescuela.com/grabar-videos-pro-movil-guia-emprendedores/" data-src="Guía"><span>Los cuatro pilares de un video pro con móvil</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f6-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Composición para vertical y tomas de seguridad</div>
+            <div class="sk-note">Ojos en el tercio superior, aire arriba controlado, y siempre dos tomas extra por si hay que cortar.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/bites-produccion-audiovisual/" data-src="Platzi"><span>Bites de Producción Audiovisual</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f6-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">B-roll: qué grabar y cuánto</div>
+            <div class="sk-note">Regla práctica: por cada minuto de alguien hablando, 6–8 planos de apoyo. El B-roll es lo que te permite cortar sin que se note.</div>
+            <div class="res">
+              <a href="https://www.pexels.com/es-es/videos/" data-src="Recurso"><span>Pexels: video de stock gratis (relleno de emergencia)</span></a>
+              <a href="https://www.youtube.com/results?search_query=c%C3%B3mo+grabar+b-roll+para+reels+tutorial+espa%C3%B1ol" data-src="Buscar"><span>Buscar: cómo grabar B-roll</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f6-6"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Dirigir a alguien frente a cámara</div>
+            <div class="sk-note">Guion en teleprompter, tomas cortas, repetir la frase tres veces. Un cliente nervioso necesita que vos manejes el ritmo del rodaje.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/intro-contenido/" data-src="Platzi"><span>Introducción a la Creación de Contenidos Digitales</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f6-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 06</span>
+          <div class="sk-name">Un video de principio a fin con material 100% grabado por vos</div>
+          <div class="sk-note">Guion, rodaje, edición, audio y color. Es la pieza central de tu portafolio.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ================= FASE 07 ================= -->
+  <details class="phase" style="--clip: var(--ember)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 07</span><i class="sep"></i><span>Semana 8</span><i class="sep"></i><span>Sistema</span>
+      </div>
+      <h2 class="ph-title">Velocidad, IA y proceso repetible</h2>
+      <p class="ph-goal">Un cliente no paga por horas, paga por piezas. Todo lo que te haga entregar el mismo resultado en la mitad del tiempo es margen directo.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/7</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f7-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Atajos de teclado de CapCut PC</div>
+            <div class="sk-note">Cortar, seleccionar, mover, previsualizar sin soltar el teclado. Editar con mouse te cuesta el doble de tiempo por video.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/playlist?list=PLcG05fx_Ehyljqljy-zppopVVmvttEVLQ" data-src="YouTube"><span>Playlist: curso de CapCut para PC en español</span></a>
+              <a href="https://www.capcut.com/es-es/resource/how-to-use-capcut-on-pc" data-src="Guía"><span>Flujo de trabajo en CapCut de escritorio</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f7-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Plantillas propias y presets reutilizables</div>
+            <div class="sk-note">Intro, estilo de subtítulo, cierre con CTA, paleta de color: armado una vez por cliente y reutilizado en cada pieza.</div>
+            <div class="res">
+              <a href="https://www.capcut.com/es-es/resource/epic-transitions-template-tutorial" data-src="Guía"><span>Trabajar con plantillas en CapCut</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f7-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">IA de CapCut: subtítulos, auto reframe, silencios, TTS, quitar fondo</div>
+            <div class="sk-note">Usala para lo mecánico y guardá tu criterio para lo que decide: el corte, el ritmo y el hook. Ahí es donde te van a seguir pagando.</div>
+            <div class="res">
+              <a href="https://www.capcut.com/es-es/tools/ai-video-editor" data-src="Guía"><span>Editor de video con IA de CapCut</span></a>
+              <a href="https://mundonetutoriales.com/como-usar-capcut-con-ia/" data-src="Guía"><span>Cómo usar CapCut con IA en 2026</span></a>
+              <a href="https://iashortvideo.com/capcut-ia-guia-completa-2026/" data-src="Guía"><span>CapCut IA: guía completa 2026</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f7-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Convertir un video largo en 6–10 cortes verticales</div>
+            <div class="sk-note">El servicio más pedido por empresas: tienen webinars, entrevistas y podcasts sin usar. Vos los convertís en un mes de contenido.</div>
+            <div class="res">
+              <a href="https://www.youtube.com/results?search_query=convertir+video+largo+en+shorts+clips+verticales+capcut" data-src="Buscar"><span>Buscar: de video largo a clips verticales</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f7-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Checklist de control de calidad antes de entregar</div>
+            <div class="sk-note">Ortografía de subtítulos, audio nivelado, zonas seguras, logo bien puesto, duración, formato. Diez ítems, dos minutos, cero entregas vergonzosas.</div>
+            <div class="res">
+              <a href="https://www.capcut.com/es-es/resource/capcut-tutorial-for-beginners" data-src="Guía"><span>Checklist básico previo a exportar</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f7-6"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Medir cuánto tardás por video y bajarlo</div>
+            <div class="sk-note">Cronometrá tres piezas. Si un short te lleva 3 horas, no podés cobrar precios de mercado: la meta razonable es 45–75 minutos.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/roles-freelance/" data-src="Platzi"><span>Curso para Trabajar como Freelance (gestión del tiempo)</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f7-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 07</span>
+          <div class="sk-name">Tu proceso escrito: de material crudo a entrega, paso a paso</div>
+          <div class="sk-note">Un documento de una página. Es lo que después te permite delegar y escalar sin perder calidad.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ================= FASE 08 ================= -->
+  <details class="phase" style="--clip: var(--violet)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 08</span><i class="sep"></i><span>Semanas 9–10</span><i class="sep"></i><span>Estrategia</span>
+      </div>
+      <h2 class="ph-title">Estrategia y métricas</h2>
+      <p class="ph-goal">Editar bien no basta para conservar un cliente: tenés que poder explicar por qué un video funcionó y qué vas a cambiar en el próximo.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/7</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f8-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Formatos y duraciones por plataforma</div>
+            <div class="sk-note">Referencias de máximo engagement: TikTok 21–34 s, Reels 11–17 s, Shorts 30–50 s, Stories 7–10 s por tarjeta. Editar "lo mismo para todos lados" es de amateur.</div>
+            <div class="res">
+              <a href="https://kontenia.com/blog/formato-tik-tok" data-src="Guía"><span>Guía completa del formato TikTok 2026</span></a>
+              <a href="https://adaptlypost.com/es/blog/tiktok-video-dimensions-aspect-ratio-guide" data-src="Guía"><span>Dimensiones y relación de aspecto por plataforma</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f8-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Métricas que importan: retención, tiempo visto, guardados, compartidos</div>
+            <div class="sk-note">Los "me gusta" no le sirven a una empresa. Guardados y compartidos sí — son señal de valor real.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/metricas-redes-sociales/" data-src="Platzi"><span>Curso de Métricas para Redes Sociales</span></a>
+              <a href="https://platzi.com/cursos/metricas-redes-sociales/como-medir-engagement-rate-en-redes-soci/" data-src="Platzi"><span>Cómo medir engagement rate</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f8-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Leer la curva de retención y corregir el próximo video</div>
+            <div class="sk-note">Dónde cae la gente: si es en el segundo 2, es el hook; si es a mitad, es el ritmo o el guion. Ese diagnóstico es lo que te vuelve difícil de reemplazar.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/metricas-redes-sociales/como-interpretar-metricas-de-redes-socia/" data-src="Platzi"><span>Cómo interpretar métricas de redes sociales</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f8-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Portada, primer frame y copy del post</div>
+            <div class="sk-note">La portada decide el clic en el perfil; el primer frame decide el clic en el feed. Son dos decisiones distintas y las dos son tuyas.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/instagram-reel/" data-src="Platzi"><span>Creación de Videos para Instagram</span></a>
+              <a href="https://platzi.com/cursos/communitymanager/" data-src="Platzi"><span>Curso de Community Manager</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f8-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Tendencias y audios: usarlos sin romper la marca</div>
+            <div class="sk-note">Una tendencia sirve si el mensaje del cliente entra en ella. Si hay que forzarla, no sirve.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/introduccion-marketing/metricas-clave-para-crecer-en-tiktok/" data-src="Platzi"><span>Métricas clave para crecer en TikTok</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f8-6"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Armar un reporte mensual para el cliente</div>
+            <div class="sk-note">Una página: qué se publicó, qué funcionó, qué se hace distinto el mes que viene. Es lo que convierte un trabajo puntual en una iguala mensual.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/reportes-redes/" data-src="Platzi"><span>Curso para Crear Reportes de Redes Sociales</span></a>
+              <a href="https://platzi.com/cursos/reportes-looker/" data-src="Platzi"><span>Reportes de Redes con Looker Studio</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f8-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 08</span>
+          <div class="sk-name">Un reporte de una página con las métricas de cinco videos tuyos</div>
+          <div class="sk-note">Con una conclusión accionable. Este documento se muestra en la reunión de venta: prueba que pensás en resultados, no en efectos.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ================= FASE 09 ================= -->
+  <details class="phase" style="--clip: var(--violet)">
+    <summary>
+      <div class="ph-meta">
+        <span class="tag">Fase 09</span><i class="sep"></i><span>Semanas 11–14</span><i class="sep"></i><span>Negocio</span>
+      </div>
+      <h2 class="ph-title">Convertirlo en un servicio que se vende</h2>
+      <p class="ph-goal">Acá es donde la mayoría se queda. Editar es la mitad del oficio; la otra mitad es conseguir el cliente, cotizar bien, entregar ordenado y cobrar a tiempo.</p>
+      <div class="ph-gauge"><div class="ph-bar"><i></i></div><div class="num">0/11</div></div>
+    </summary>
+    <div class="ph-body">
+      <ul class="skills">
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-1"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Elegir nicho y definir la oferta exacta</div>
+            <div class="sk-note">"Edito videos" no se vende. "12 reels al mes para clínicas estéticas, con guion y publicación" sí. El nicho te permite reutilizar plantillas y cobrar más.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/roles-freelance/" data-src="Platzi"><span>Curso para Trabajar en Marketing como Freelance</span></a>
+              <a href="https://platzi.com/escuela/negocios/" data-src="Platzi"><span>Escuela de Negocios de Platzi</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-2"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Precios y paquetes</div>
+            <div class="sk-note">Nunca cobres por hora al principio: cobrá por pieza o por paquete mensual. Referencias de mercado en la tabla de abajo.</div>
+            <div class="res">
+              <a href="https://www.socialancer.com/editor-de-video-sueldo/" data-src="Guía"><span>¿Cuánto gana un editor de video? Guía salarial 2026</span></a>
+              <a href="https://www.vacantesremotas.com/blog/cuanto-gana-un-editor-de-video-para-youtube-remoto-en-2026" data-src="Guía"><span>Tarifas de editor remoto para YouTube 2026</span></a>
+              <a href="https://www.cronoshare.com/cuanto-cuesta/edicion-video" data-src="Guía"><span>Precios de edición de video 2026</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-3"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Portafolio: 5 piezas + un demo reel de 30 segundos</div>
+            <div class="sk-note">Los nueve entregables de esta ruta ya son tu portafolio. Presentalos por tipo de cliente, no en orden cronológico.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/storytellingmarcapersonal/" data-src="Platzi"><span>Storytelling para marca personal</span></a>
+              <a href="https://www.youtube.com/results?search_query=demo+reel+editor+de+video+portafolio+c%C3%B3mo+armar" data-src="Buscar"><span>Buscar: cómo armar un demo reel de editor</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-4"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Casos con antes/después y resultados</div>
+            <div class="sk-note">"Le edité los reels" vale poco. "Pasó de 400 a 9.000 visitas promedio en seis semanas" cierra ventas. Registrá números desde el primer cliente, aunque sea gratis.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/metricas-redes-sociales/" data-src="Platzi"><span>Métricas para Redes Sociales</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-5"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Prospección: dónde están los clientes</div>
+            <div class="sk-note">Negocios locales con perfiles descuidados, agencias que subcontratan, creadores que ya monetizan, y tu propia red. Mensaje corto + una muestra editada de <em>su</em> material.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/estrategia-ventas/" data-src="Platzi"><span>Curso de Estrategias de Venta en Redes Sociales</span></a>
+              <a href="https://platzi.com/cursos/vender-internet-nuevo/" data-src="Platzi"><span>Curso para Empezar a Vender por Internet</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-6"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">La llamada de descubrimiento y la propuesta</div>
+            <div class="sk-note">Preguntá objetivo, audiencia y qué material ya tienen antes de dar un precio. La propuesta va en una página: alcance, entregables, plazos, precio, condiciones.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/ventas/" data-src="Platzi"><span>Curso de Ventas y Fidelización de Clientes</span></a>
+              <a href="https://platzi.com/cursos/ventas-b2b/" data-src="Platzi"><span>Curso de Estrategias de Ventas B2B (empresas)</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-7"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Contrato, anticipo y política de revisiones</div>
+            <div class="sk-note">Siempre por escrito: alcance, plazos, forma de pago y <strong>cuántas rondas de cambios incluye</strong>. Las revisiones infinitas son lo que funde a los editores nuevos. Anticipo del 50%.</div>
+            <div class="res">
+              <a href="https://asesoriafiscalia.com/editor-video-autonomo-espana/" data-src="Guía"><span>Empezar como editor de video autónomo: contratos y condiciones</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-8"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Onboarding y flujo de entrega</div>
+            <div class="sk-note">Brief inicial, carpeta compartida donde el cliente sube material, entrega con versiones numeradas y feedback en un solo lugar (no en tres chats distintos).</div>
+            <div class="res">
+              <a href="https://www.youtube.com/results?search_query=flujo+de+trabajo+con+clientes+editor+de+video+entrega+revisiones" data-src="Buscar"><span>Buscar: flujo de entrega y revisiones con clientes</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-9"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Facturación y cobros (incluido el exterior)</div>
+            <div class="sk-note">Definí desde el primer día cómo emitís comprobante y cómo cobrás a un cliente de otro país. Resolverlo tarde te hace perder trabajos buenos.</div>
+            <div class="res">
+              <a href="https://platzi.com/escuela/negocios/" data-src="Platzi"><span>Escuela de Negocios: finanzas y facturación freelance</span></a>
+            </div>
+          </div>
+        </li>
+
+        <li class="skill">
+          <label><input type="checkbox" data-id="f9-10"><span class="kf"></span></label>
+          <div class="sk-body">
+            <div class="sk-name">Escalar: de editor a proveedor de contenido</div>
+            <div class="sk-note">Igualas mensuales en vez de piezas sueltas, un editor junior que ejecuta con tu proceso escrito, y precio por valor. Ahí es donde el ingreso deja de depender de tus horas.</div>
+            <div class="res">
+              <a href="https://platzi.com/cursos/ventas-b2b/" data-src="Platzi"><span>Ventas B2B: vender a empresas</span></a>
+              <a href="https://platzi.com/ruta/creadorvideo/" data-src="Platzi"><span>Ruta de Creación de Videos (repaso completo)</span></a>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="deliver">
+        <label><input type="checkbox" data-id="f9-d"><span class="kf"></span></label>
+        <div class="sk-body">
+          <span class="tagline">Entregable 09</span>
+          <div class="sk-name">Portafolio publicado y propuesta enviada a 10 prospectos reales</div>
+          <div class="sk-note">Con una muestra editada del material de cada uno. Es la acción que convierte esta ruta en ingresos.</div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+</main>
+
+<!-- ================= REFERENCIA ================= -->
+<section class="section">
+  <div class="wrap">
+    <h2>Ficha técnica de exportación</h2>
+    <p class="sub">Los ajustes con los que deberías exportar todo trabajo de cliente. Guardalos como preset.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Parámetro</th><th>Valor</th><th>Por qué</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Resolución</td><td class="num">1080 × 1920</td><td>Estándar 9:16 de Reels, Shorts, TikTok y Stories</td></tr>
+          <tr><td>Relación de aspecto</td><td class="num">9:16</td><td>Pantalla completa vertical</td></tr>
+          <tr><td>Contenedor</td><td class="num">MP4</td><td>El más universal entre calidad y peso</td></tr>
+          <tr><td>Códec de video</td><td class="num">H.264 High</td><td>Soportado en todas las plataformas</td></tr>
+          <tr><td>Cuadros por segundo</td><td class="num">30 fps</td><td>Equilibrio entre fluidez y peso; 60 solo si hay movimiento rápido</td></tr>
+          <tr><td>Bitrate de video</td><td class="num">10–15 Mbps</td><td>Debajo de 10 se nota la compresión al recomprimir la plataforma</td></tr>
+          <tr><td>Audio</td><td class="num">AAC · 48 kHz · 128–192 kbps</td><td>Estéreo, estándar de las redes</td></tr>
+          <tr><td>Duración de mayor engagement</td><td class="num">TikTok 21–34 s · Reels 11–17 s · Shorts 30–50 s</td><td>Referencias de mercado, no reglas fijas</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Referencia de precios</h2>
+    <p class="sub">
+      Rangos publicados en guías de mercado 2026 para orientarte al cotizar. Varían mucho por país,
+      nicho y si entregás solo edición o también guion y estrategia. Empezá en la parte baja para
+      construir casos, subí en cuanto tengas resultados que mostrar.
+    </p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Servicio</th><th>Rango de referencia</th><th>Notas</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reel / Short / TikTok suelto</td><td class="num">USD 20 – 60</td><td>Mercado internacional; sube con guion y diseño sonoro incluidos</td></tr>
+          <tr><td>Video de YouTube (5–10 min)</td><td class="num">EUR 60 – 150</td><td>Referencia España para edición estándar</td></tr>
+          <tr><td>Hora freelance</td><td class="num">EUR 30 – 50</td><td>Solo como cálculo interno; al cliente cotizale por pieza</td></tr>
+          <tr><td>Paquete mensual (iguala)</td><td class="num">precio pieza × volumen − 15/25%</td><td>Descuento a cambio de ingreso previsible y trabajo en lote</td></tr>
+          <tr><td>Facturación mensual realista</td><td class="num">EUR 1.200 – 3.000+</td><td>Según carga de trabajo y cartera de clientes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <h2>Recursos permanentes</h2>
+    <p class="sub">Para tener a mano durante toda la ruta, no para hacer en una fase concreta.</p>
+    <div class="cards">
+
+      <div class="card">
+        <h3>Platzi — rutas completas</h3>
+        <p>Si preferís seguir un programa cerrado en vez de curso por curso.</p>
+        <ul>
+          <li><a href="https://platzi.com/ruta/creacion-audiovisual/">Ruta de Creación Audiovisual</a><small>escribir, grabar y editar contenido audiovisual</small></li>
+          <li><a href="https://platzi.com/ruta/creadorvideo/">Ruta de Creación de Videos</a><small>video para YouTube, Instagram, TikTok y streaming</small></li>
+          <li><a href="https://platzi.com/ruta/copywriter/">Ruta de Copywriting y Storytelling</a><small>la parte de guion que casi nadie estudia</small></li>
+          <li><a href="https://platzi.com/escuela/audiovisual/">Escuela de Contenido Audiovisual</a><small>catálogo completo</small></li>
+          <li><a href="https://platzi.com/escuela/marketing/">Escuela de Marketing Digital</a><small>para hablar el idioma de tus clientes</small></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Música y efectos</h3>
+        <p>Verificá siempre la licencia antes de usar algo en trabajo pagado.</p>
+        <ul>
+          <li><a href="https://www.epidemicsound.com/es/music/">Epidemic Sound</a><small>suscripción, uso comercial cubierto</small></li>
+          <li><a href="https://pixabay.com/es/music/">Pixabay Music</a><small>gratis, sin atribución obligatoria</small></li>
+          <li><a href="https://pixabay.com/es/sound-effects/">Pixabay Sound Effects</a><small>whooshes, impactos, ambientes</small></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Imagen y video de stock</h3>
+        <p>Para B-roll de relleno cuando el material del cliente no alcanza.</p>
+        <ul>
+          <li><a href="https://www.pexels.com/es-es/videos/">Pexels Video</a><small>gratis, incluido uso comercial</small></li>
+          <li><a href="https://pixabay.com/es/videos/">Pixabay Video</a><small>alternativa con buen catálogo vertical</small></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Documentación de CapCut</h3>
+        <p>La referencia oficial cuando un tutorial quedó desactualizado.</p>
+        <ul>
+          <li><a href="https://www.capcut.com/es-es/resource/capcut-tutorial-for-beginners">Tutorial oficial para principiantes</a></li>
+          <li><a href="https://www.capcut.com/es-es/resource/how-to-add-keyframes-in-capcut">Fotogramas clave</a></li>
+          <li><a href="https://www.capcut.com/es-es/tools/speed-ramp">Curvas de velocidad</a></li>
+          <li><a href="https://www.capcut.com/es-es/tools/video-color-correction">Corrección de color</a></li>
+          <li><a href="https://www.capcut.com/es-es/tools/ai-video-editor">Herramientas de IA</a></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Cursos completos en YouTube</h3>
+        <p>Si querés una segunda pasada completa, gratis, en video.</p>
+        <ul>
+          <li><a href="https://www.youtube.com/watch?v=fgockQqpW48">CapCut desde cero: curso completo (2026)</a></li>
+          <li><a href="https://www.youtube.com/watch?v=upKze9lk9jA">Curso de CapCut 2026 bien explicado</a></li>
+          <li><a href="https://www.youtube.com/watch?v=jhZMgrXl6_U">Curso gratis: editar con el móvil y cobrar por ello</a></li>
+          <li><a href="https://www.youtube.com/playlist?list=PLcG05fx_Ehyljqljy-zppopVVmvttEVLQ">Playlist: CapCut para PC en español</a></li>
+          <li><a href="https://www.youtube.com/watch?v=68KNzsmBarM">CapCut full course (inglés)</a></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Siguiente paso, cuando ya cobres</h3>
+        <p>CapCut alcanza para todo el video vertical. Estos abren otros trabajos.</p>
+        <ul>
+          <li><a href="https://platzi.com/escuela/audiovisual/">Premiere Pro / DaVinci Resolve</a><small>proyectos largos y clientes corporativos</small></li>
+          <li><a href="https://platzi.com/cursos/tecnicas-iluminacion/">Fotografía e iluminación</a><small>para cobrar también el rodaje</small></li>
+          <li><a href="https://platzi.com/cursos/reportes-looker/">Reportes con Looker Studio</a><small>para vender resultados, no piezas</small></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="wrap">
+    <p>
+      Tu progreso se guarda solo en este navegador (<code>localStorage</code>). Si abrís la página
+      en otro dispositivo vas a empezar de cero, y borrar los datos del navegador la reinicia.
+    </p>
+    <p>
+      Los enlaces se recopilaron en agosto de 2026 a partir de búsquedas reales. Los tutoriales de
+      YouTube envejecen y a veces se borran: cada bloque incluye enlaces de búsqueda para que
+      encuentres el reemplazo actualizado sin depender de esta lista.
+    </p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var KEY = "ruta-capcut-v1";
+  var THEME_KEY = "ruta-capcut-theme";
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][data-id]'));
+
+  /* ---------- estado ---------- */
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function save(state) {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var state = load();
+
+  boxes.forEach(function (box) {
+    if (state[box.dataset.id]) box.checked = true;
+    box.addEventListener("change", function () {
+      if (box.checked) state[box.dataset.id] = 1;
+      else delete state[box.dataset.id];
+      save(state);
+      render();
+    });
+  });
+
+  /* ---------- render de progreso ---------- */
+  var pctEl = document.getElementById("pct");
+  var cntEl = document.getElementById("cnt");
+  var fillEl = document.getElementById("scrubFill");
+  var headEl = document.getElementById("scrubHead");
+  var phases = Array.prototype.slice.call(document.querySelectorAll(".phase"));
+  var onlyPending = false;
+
+  function render() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    var total = boxes.length;
+    var pct = total ? Math.round((done / total) * 100) : 0;
+
+    pctEl.textContent = pct + "%";
+    cntEl.textContent = done + " / " + total;
+    fillEl.style.width = pct + "%";
+    headEl.style.left = "calc(" + pct + "% - 1px)";
+
+    phases.forEach(function (phase) {
+      var items = Array.prototype.slice.call(phase.querySelectorAll('input[type="checkbox"]'));
+      var d = items.filter(function (b) { return b.checked; }).length;
+      var bar = phase.querySelector(".ph-bar i");
+      var num = phase.querySelector(".ph-gauge .num");
+      if (bar) bar.style.width = (items.length ? (d / items.length) * 100 : 0) + "%";
+      if (num) num.textContent = d + "/" + items.length;
+      var complete = items.length > 0 && d === items.length;
+      phase.setAttribute("data-complete", complete ? "true" : "false");
+      phase.classList.toggle("dim", onlyPending && complete);
+    });
+
+    if (onlyPending) {
+      boxes.forEach(function (b) {
+        var row = b.closest(".skill") || b.closest(".deliver");
+        if (row && row.classList.contains("skill")) row.classList.toggle("hide", b.checked);
+      });
+    } else {
+      document.querySelectorAll(".skill.hide").forEach(function (r) { r.classList.remove("hide"); });
+    }
+  }
+
+  document.getElementById("factSkills").textContent = boxes.length - phases.length;
+
+  /* ---------- filtro ---------- */
+  var filterBtn = document.getElementById("filterBtn");
+  filterBtn.addEventListener("click", function () {
+    onlyPending = !onlyPending;
+    filterBtn.setAttribute("aria-pressed", onlyPending ? "true" : "false");
+    filterBtn.textContent = onlyPending ? "Ver todo" : "Pendientes";
+    if (onlyPending) {
+      phases.forEach(function (p) { if (p.getAttribute("data-complete") !== "true") p.open = true; });
+    }
+    render();
+  });
+
+  /* ---------- reinicio ---------- */
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    if (!confirm("¿Borrar todo el progreso guardado? No se puede deshacer.")) return;
+    state = {};
+    save(state);
+    boxes.forEach(function (b) { b.checked = false; });
+    render();
+  });
+
+  /* ---------- tema ---------- */
+  var themeBtn = document.getElementById("themeBtn");
+  try {
+    var saved = localStorage.getItem(THEME_KEY);
+    if (saved) document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+  themeBtn.addEventListener("click", function () {
+    var current = document.documentElement.getAttribute("data-theme");
+    var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    if (!current) current = prefersDark ? "dark" : "light";
+    var next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
